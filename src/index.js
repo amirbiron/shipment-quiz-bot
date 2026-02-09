@@ -16,7 +16,8 @@ function getSession(userId) {
       currentQuestion: null,
       score: 0,
       answered: 0,
-      category: null
+      category: null,
+      questionIndex: -1
     });
   }
   return sessions.get(userId);
@@ -26,12 +27,18 @@ function resetSession(userId) {
   sessions.delete(userId);
 }
 
-function getRandomQuestion(category = null) {
-  const filtered = category 
+function getNextQuestion(category = null, currentIndex = -1) {
+  const filtered = category
     ? questions.filter(q => q.category === category)
     : questions;
-  
-  return filtered[Math.floor(Math.random() * filtered.length)];
+
+  // Get next index in sequence
+  const nextIndex = (currentIndex + 1) % filtered.length;
+
+  return {
+    question: filtered[nextIndex],
+    nextIndex: nextIndex
+  };
 }
 
 function formatQuestion(question) {
@@ -90,11 +97,18 @@ bot.command('category', (ctx) => {
 
 bot.command('random', (ctx) => {
   const session = getSession(ctx.from.id);
-  const question = getRandomQuestion();
-  
-  session.currentQuestion = question;
-  
-  ctx.replyWithMarkdown(formatQuestion(question));
+
+  // Reset index when switching to random mode
+  if (session.category !== null) {
+    session.questionIndex = -1;
+    session.category = null;
+  }
+
+  const result = getNextQuestion(null, session.questionIndex);
+  session.currentQuestion = result.question;
+  session.questionIndex = result.nextIndex;
+
+  ctx.replyWithMarkdown(formatQuestion(result.question));
 });
 
 bot.command('stats', (ctx) => {
@@ -126,24 +140,37 @@ bot.command('reset', (ctx) => {
 bot.action(/^cat_(.+)$/, (ctx) => {
   const category = ctx.match[1];
   const session = getSession(ctx.from.id);
-  
+
+  // Reset index when switching category
+  if (session.category !== category) {
+    session.questionIndex = -1;
+  }
+
   session.category = category;
-  
-  const question = getRandomQuestion(category);
-  session.currentQuestion = question;
-  
+
+  const result = getNextQuestion(category, session.questionIndex);
+  session.currentQuestion = result.question;
+  session.questionIndex = result.nextIndex;
+
   ctx.answerCbQuery();
-  ctx.replyWithMarkdown(formatQuestion(question));
+  ctx.replyWithMarkdown(formatQuestion(result.question));
 });
 
 bot.action('random', (ctx) => {
   const session = getSession(ctx.from.id);
-  const question = getRandomQuestion();
-  
-  session.currentQuestion = question;
-  
+
+  // Reset index when switching to random mode
+  if (session.category !== null) {
+    session.questionIndex = -1;
+    session.category = null;
+  }
+
+  const result = getNextQuestion(null, session.questionIndex);
+  session.currentQuestion = result.question;
+  session.questionIndex = result.nextIndex;
+
   ctx.answerCbQuery();
-  ctx.replyWithMarkdown(formatQuestion(question));
+  ctx.replyWithMarkdown(formatQuestion(result.question));
 });
 
 // Answer handling
