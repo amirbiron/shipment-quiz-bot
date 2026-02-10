@@ -42,8 +42,8 @@ function getNextQuestion(category = null, currentIndex = -1) {
 }
 
 function formatQuestion(question) {
-  let text = `📝 *שאלה:*\n${question.question}\n\n`;
-  
+  let text = `📝 <b>שאלה:</b>\n${question.question}\n\n`;
+
   if (question.type === 'multiple') {
     question.options.forEach((opt, idx) => {
       text += `${idx + 1}. ${opt}\n`;
@@ -53,7 +53,7 @@ function formatQuestion(question) {
     text += '✅ נכון\n❌ לא נכון\n\n';
     text += '💡 שלח "נכון" או "לא נכון"';
   }
-  
+
   return text;
 }
 
@@ -62,23 +62,23 @@ bot.command('start', (ctx) => {
   resetSession(ctx.from.id);
   
   const welcomeText = `
-🎓 *ברוכים הבאים לבוט החידון של Shipment Bot!*
+🎓 <b>ברוכים הבאים לבוט החידון של Shipment Bot!</b>
 
 בוט זה עוזר לך ללמוד את המבנה והארכיטקטורה של הפרויקט.
 
-🎯 *פקודות זמינות:*
+🎯 <b>פקודות זמינות:</b>
 /category - בחר קטגוריה
 /random - שאלה רנדומלית
 /stats - סטטיסטיקות (סשן נוכחי)
 /reset - אפס סטטיסטיקות
 
-📚 *קטגוריות:*
-${Object.values(categories).map(c => `${c.emoji} ${c.name}`).join('\n')}
+📚 <b>קטגוריות:</b>
+${Object.values(categories).map(c => c.name).join('\n')}
 
 בהצלחה! 🚀
   `;
-  
-  ctx.replyWithMarkdown(welcomeText);
+
+  ctx.replyWithHTML(welcomeText);
 });
 
 bot.command('category', (ctx) => {
@@ -108,7 +108,7 @@ bot.command('random', (ctx) => {
   session.currentQuestion = result.question;
   session.questionIndex = result.nextIndex;
 
-  ctx.replyWithMarkdown(formatQuestion(result.question));
+  ctx.replyWithHTML(formatQuestion(result.question));
 });
 
 bot.command('stats', (ctx) => {
@@ -119,7 +119,7 @@ bot.command('stats', (ctx) => {
     : 0;
   
   const statsText = `
-📊 *הסטטיסטיקות שלך:*
+📊 <b>הסטטיסטיקות שלך:</b>
 
 ✅ נכונות: ${session.score}
 📝 סה"כ שאלות: ${session.answered}
@@ -127,8 +127,8 @@ bot.command('stats', (ctx) => {
 
 💡 הסטטיסטיקות נשמרות רק לסשן הנוכחי
   `;
-  
-  ctx.replyWithMarkdown(statsText);
+
+  ctx.replyWithHTML(statsText);
 });
 
 bot.command('reset', (ctx) => {
@@ -153,7 +153,7 @@ bot.action(/^cat_(.+)$/, (ctx) => {
   session.questionIndex = result.nextIndex;
 
   ctx.answerCbQuery();
-  ctx.replyWithMarkdown(formatQuestion(result.question));
+  ctx.replyWithHTML(formatQuestion(result.question));
 });
 
 bot.action('random', (ctx) => {
@@ -170,7 +170,7 @@ bot.action('random', (ctx) => {
   session.questionIndex = result.nextIndex;
 
   ctx.answerCbQuery();
-  ctx.replyWithMarkdown(formatQuestion(result.question));
+  ctx.replyWithHTML(formatQuestion(result.question));
 });
 
 // Answer handling
@@ -213,26 +213,26 @@ bot.on('text', (ctx) => {
   }
   
   // Build response
-  let response = isCorrect 
-    ? '✅ *תשובה נכונה!*\n\n'
-    : '❌ *תשובה שגויה*\n\n';
-  
+  let response = isCorrect
+    ? '✅ <b>תשובה נכונה!</b>\n\n'
+    : '❌ <b>תשובה שגויה</b>\n\n';
+
   if (question.type === 'multiple' && !isCorrect) {
     response += `התשובה הנכונה: ${question.options[question.correct]}\n\n`;
   } else if (question.type === 'truefalse' && !isCorrect) {
     response += `התשובה הנכונה: ${question.correct ? 'נכון' : 'לא נכון'}\n\n`;
   }
-  
-  response += `💡 *הסבר:*\n${question.explanation}\n\n`;
+
+  response += `💡 <b>הסבר:</b>\n${question.explanation}\n\n`;
   response += `📊 ציון נוכחי: ${session.score}/${session.answered}`;
-  
+
   // Send response with next question button
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.callback('➡️ שאלה הבאה', session.category ? `cat_${session.category}` : 'random')],
     [Markup.button.callback('📚 שנה קטגוריה', 'change_category')]
   ]);
-  
-  ctx.replyWithMarkdown(response, keyboard);
+
+  ctx.replyWithHTML(response, keyboard);
   
   // Clear current question
   session.currentQuestion = null;
