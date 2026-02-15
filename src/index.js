@@ -110,13 +110,14 @@ function formatQuestion(question) {
 // ============================================================
 // Helper: question inline keyboard (with explain button)
 // ============================================================
-function questionKeyboard() {
-  if (isGeminiConfigured()) {
-    return Markup.inlineKeyboard([
-      [Markup.button.callback('💡 הסבר לי', 'explain_gemini')]
-    ]);
-  }
-  return undefined;
+function questionKeyboard(session) {
+  if (!isGeminiConfigured()) return undefined;
+  const repoKey = session.repo || 'shipment';
+  const repoData = repos[repoKey];
+  const qIndex = repoData.questions.indexOf(session.currentQuestion);
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('💡 הסבר לי', `exp:${repoKey}:${qIndex}`)]
+  ]);
 }
 
 // ============================================================
@@ -241,7 +242,7 @@ bot.command('random', (ctx) => {
   session.currentQuestion = result.question;
   session.questionIndex = result.nextIndex;
 
-  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard());
+  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard(session));
 });
 
 bot.command('stats', (ctx) => {
@@ -341,7 +342,7 @@ bot.action(/^cat_(.+)$/, (ctx) => {
   session.questionIndex = result.nextIndex;
 
   ctx.answerCbQuery();
-  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard());
+  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard(session));
 });
 
 bot.action('random', (ctx) => {
@@ -373,23 +374,26 @@ bot.action('random', (ctx) => {
   session.questionIndex = result.nextIndex;
 
   ctx.answerCbQuery();
-  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard());
+  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard(session));
 });
 
 // ============================================================
-// Explain with Gemini handler
+// Explain with Gemini handler (compact callback: exp:repoKey:qIndex)
 // ============================================================
-bot.action('explain_gemini', async (ctx) => {
-  const session = getSession(ctx.from.id);
+bot.action(/^exp:(.+):(\d+)$/, async (ctx) => {
+  const repoKey = ctx.match[1];
+  const qIndex = parseInt(ctx.match[2]);
 
-  if (!session.currentQuestion) {
-    ctx.answerCbQuery('אין שאלה פעילה');
+  const repoData = repos[repoKey];
+  if (!repoData || !repoData.questions[qIndex]) {
+    ctx.answerCbQuery('שאלה לא נמצאה');
     return;
   }
 
   ctx.answerCbQuery('⏳ מייצר הסבר...');
 
-  const explanation = await explainQuestion(session.currentQuestion);
+  const question = repoData.questions[qIndex];
+  const explanation = await explainQuestion(question);
   if (!explanation) {
     ctx.reply('⚠️ לא הצלחתי לייצר הסבר. ודא שמפתח GEMINI_API_KEY מוגדר.');
     return;
