@@ -2,6 +2,7 @@ import { Telegraf, Markup } from 'telegraf';
 import dotenv from 'dotenv';
 import { categories as shipmentCategories, questions as shipmentQuestions } from './data/questions.js';
 import { loadQuestionsFromGist } from './data/gistLoader.js';
+import { explainQuestion, isGeminiConfigured } from './data/geminiHelper.js';
 
 dotenv.config();
 
@@ -104,6 +105,18 @@ function formatQuestion(question) {
   }
 
   return text;
+}
+
+// ============================================================
+// Helper: question inline keyboard (with explain button)
+// ============================================================
+function questionKeyboard() {
+  if (isGeminiConfigured()) {
+    return Markup.inlineKeyboard([
+      [Markup.button.callback('💡 הסבר לי', 'explain_gemini')]
+    ]);
+  }
+  return undefined;
 }
 
 // ============================================================
@@ -228,7 +241,7 @@ bot.command('random', (ctx) => {
   session.currentQuestion = result.question;
   session.questionIndex = result.nextIndex;
 
-  ctx.replyWithHTML(formatQuestion(result.question));
+  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard());
 });
 
 bot.command('stats', (ctx) => {
@@ -328,7 +341,7 @@ bot.action(/^cat_(.+)$/, (ctx) => {
   session.questionIndex = result.nextIndex;
 
   ctx.answerCbQuery();
-  ctx.replyWithHTML(formatQuestion(result.question));
+  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard());
 });
 
 bot.action('random', (ctx) => {
@@ -360,7 +373,29 @@ bot.action('random', (ctx) => {
   session.questionIndex = result.nextIndex;
 
   ctx.answerCbQuery();
-  ctx.replyWithHTML(formatQuestion(result.question));
+  ctx.replyWithHTML(formatQuestion(result.question), questionKeyboard());
+});
+
+// ============================================================
+// Explain with Gemini handler
+// ============================================================
+bot.action('explain_gemini', async (ctx) => {
+  const session = getSession(ctx.from.id);
+
+  if (!session.currentQuestion) {
+    ctx.answerCbQuery('אין שאלה פעילה');
+    return;
+  }
+
+  ctx.answerCbQuery('⏳ מייצר הסבר...');
+
+  const explanation = await explainQuestion(session.currentQuestion);
+  if (!explanation) {
+    ctx.reply('⚠️ לא הצלחתי לייצר הסבר. ודא שמפתח GEMINI_API_KEY מוגדר.');
+    return;
+  }
+
+  ctx.replyWithHTML(`🤖 <b>הסבר מ-Gemini:</b>\n\n${escapeHTML(explanation)}`);
 });
 
 // ============================================================
