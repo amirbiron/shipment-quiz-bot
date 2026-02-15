@@ -66,6 +66,14 @@ export const categories = {
   outbox: {
     name: '📤 Outbox Pattern',
     emoji: '📤'
+  },
+  debugging: {
+    name: '🔧 Debugging Tools',
+    emoji: '🔧'
+  },
+  api_docs: {
+    name: '📖 API Documentation',
+    emoji: '📖'
   }
 };
 
@@ -1181,5 +1189,357 @@ export const questions = [
     question: 'הודעות outbox נשלחות סינכרונית כחלק מהטרנזקציה הראשית.',
     correct: false,
     explanation: 'ההודעות רק נשמרות בטבלת outbox באותה טרנזקציה. השליחה בפועל מתבצעת אסינכרונית ע"י Celery worker שמעבד את התור כל 10 שניות.'
+  },
+
+  // Debugging Tools - Multiple Choice
+  {
+    id: 'debug_1',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'מה ההבדל בין Liveness ל-Readiness probe?',
+    options: [
+      'Liveness בודק DB, Readiness בודק Redis',
+      'Liveness בודק רק שהתהליך חי, Readiness בודק את כל התלויות',
+      'Liveness לפרודקשן, Readiness לפיתוח',
+      'אין הבדל - שניהם בודקים אותם דברים'
+    ],
+    correct: 1,
+    explanation: 'Liveness (`/health`) רק מוודא שהתהליך חי, בעוד Readiness (`/health/ready`) בודק DB, Redis, WhatsApp Gateway ו-Celery'
+  },
+  {
+    id: 'debug_2',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'באיזה סטטוס Circuit Breaker חוסם קריאות לשירות חיצוני?',
+    options: [
+      'closed',
+      'open',
+      'half_open',
+      'disabled'
+    ],
+    correct: 1,
+    explanation: 'במצב `open` ה-Circuit Breaker חוסם קריאות כי היו יותר מדי כשלונות'
+  },
+  {
+    id: 'debug_3',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'איזה endpoint משמש לשליחה מחדש של הודעה כושלת?',
+    options: [
+      'POST /api/admin/debug/outbox/retry',
+      'POST /api/admin/debug/outbox/messages/{id}/retry',
+      'GET /api/admin/debug/outbox/messages?retry=true',
+      'PATCH /api/admin/debug/outbox/{id}'
+    ],
+    correct: 1,
+    explanation: 'הנתיב המדויק הוא `POST /api/admin/debug/outbox/messages/{message_id}/retry`'
+  },
+  {
+    id: 'debug_4',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'כמה Circuit Breakers רשומים במערכת?',
+    options: [
+      '2 (Telegram, WhatsApp)',
+      '3 (Telegram, WhatsApp, WhatsApp Admin)',
+      '4 (Telegram, WhatsApp, Redis, DB)',
+      '1 (משותף לכל השירותים)'
+    ],
+    correct: 1,
+    explanation: 'יש 3 Circuit Breakers: telegram, whatsapp, ו-whatsapp_admin'
+  },
+  {
+    id: 'debug_5',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'מה יקרה אם ננסה retry להודעת outbox בסטטוס `sent`?',
+    options: [
+      'ההודעה תישלח שוב',
+      'תתקבל שגיאה 400',
+      'הסטטוס יתאפס ל-pending',
+      'ההודעה תימחק'
+    ],
+    correct: 1,
+    explanation: 'Retry עובד רק על הודעות בסטטוס `failed` - אחרת מתקבלת שגיאה 400'
+  },
+  {
+    id: 'debug_6',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'איזה פרמטר ב-force-state קובע אם למחוק את ה-context?',
+    options: [
+      'reset_context',
+      'clear_context',
+      'delete_data',
+      'clean_state'
+    ],
+    correct: 1,
+    explanation: 'הפרמטר `clear_context` (ברירת מחדל: true) קובע אם לנקות את נתוני ההקשר'
+  },
+  {
+    id: 'debug_7',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'איזה כלי בודק thread safety של Circuit Breaker?',
+    options: [
+      'GET /api/admin/debug/circuit-breakers',
+      'סקריפט health_check.py',
+      'GET /health/ready',
+      'pytest --concurrency'
+    ],
+    correct: 1,
+    explanation: 'הסקריפט `health_check.py` בודק בין היתר thread safety ותאימות multi event-loop'
+  },
+  {
+    id: 'debug_8',
+    category: 'debugging',
+    type: 'multiple',
+    question: 'מה ברירת המחדל של limit ב-GET /api/admin/debug/outbox/messages?',
+    options: [
+      '10',
+      '20',
+      '50',
+      '100'
+    ],
+    correct: 2,
+    explanation: 'ברירת המחדל היא 50 הודעות (טווח: 1-200)'
+  },
+
+  // API Documentation - Multiple Choice
+  {
+    id: 'api_doc_1',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'באיזה כתובת נמצא התיעוד האינטראקטיבי (Swagger)?',
+    options: [
+      '/api/docs',
+      '/docs',
+      '/swagger',
+      '/api-docs'
+    ],
+    correct: 1,
+    explanation: 'התיעוד של FastAPI נמצא ב-`/docs` (Swagger UI) וגם ב-`/redoc` (ReDoc)'
+  },
+  {
+    id: 'api_doc_2',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'כמה שיטות אימות קיימות במערכת?',
+    options: [
+      '1 (רק Admin API Key)',
+      '2 (Admin API Key + JWT)',
+      '3 (Admin API Key + JWT + OTP)',
+      '4 (כולל Basic Auth)'
+    ],
+    correct: 2,
+    explanation: 'יש 3 שיטות: Admin API Key, JWT Token, ו-OTP (לקבלת JWT)'
+  },
+  {
+    id: 'api_doc_3',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'מה קורה כש-verify-otp מוצא כמה תחנות למשתמש?',
+    options: [
+      'מחזיר שגיאה 400',
+      'בוחר את התחנה הראשונה אוטומטית',
+      'מחזיר רשימת תחנות לבחירה',
+      'מבקש OTP נוסף'
+    ],
+    correct: 2,
+    explanation: 'מוחזר `choose_station: true` עם רשימת תחנות, והמשתמש צריך לשלוח שוב עם station_id'
+  },
+  {
+    id: 'api_doc_4',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'מהו טווח הערכים המקסימלי של page_size במשלוחים?',
+    options: [
+      '1-50',
+      '1-100',
+      '1-200',
+      'אין הגבלה'
+    ],
+    correct: 1,
+    explanation: 'בפאנל, page_size יכול להיות בין 1 ל-100 (ברירת מחדל: 20)'
+  },
+  {
+    id: 'api_doc_5',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'מה קורה ל-refresh token אחרי שימוש?',
+    options: [
+      'נשאר תקף לשימוש נוסף',
+      'נמחק (token rotation)',
+      'תוקפו מתארך',
+      'הופך ל-access token'
+    ],
+    correct: 1,
+    explanation: 'המערכת משתמשת ב-token rotation - כל refresh token הוא חד-פעמי'
+  },
+  {
+    id: 'api_doc_6',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'כמה סדרנים מקסימום אפשר להוסיף בפעולה אחת ב-bulk?',
+    options: [
+      '10',
+      '20',
+      '50',
+      '100'
+    ],
+    correct: 2,
+    explanation: 'הוספה מרובה של סדרנים מוגבלת ל-50 בפעולה אחת'
+  },
+  {
+    id: 'api_doc_7',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'איזה endpoint מחזיר CSV עם BOM לתמיכה בעברית ב-Excel?',
+    options: [
+      'GET /api/panel/deliveries/history',
+      'GET /api/panel/reports/collection/export',
+      'GET /api/panel/wallet/ledger',
+      'GET /api/panel/dashboard'
+    ],
+    correct: 1,
+    explanation: 'דוח הגבייה מיוצא ל-CSV עם BOM לתצוגה נכונה בעברית ב-Excel'
+  },
+  {
+    id: 'api_doc_8',
+    category: 'api_docs',
+    type: 'multiple',
+    question: 'מה ההבדל בין Swagger UI ל-ReDoc?',
+    options: [
+      'Swagger מהיר יותר',
+      'ReDoc תומך בעברית',
+      'Swagger אינטראקטיבי, ReDoc נקי לקריאה',
+      'אין הבדל - זה אותו דבר'
+    ],
+    correct: 2,
+    explanation: 'Swagger UI מאפשר Try it out, ReDoc יותר נקי וטוב לקריאה של התיעוד'
+  },
+
+  // Debugging Tools - True/False
+  {
+    id: 'debug_tf_1',
+    category: 'debugging',
+    type: 'truefalse',
+    question: 'Liveness probe בודק את החיבור ל-DB ו-Redis',
+    correct: false,
+    explanation: 'Liveness רק בודק שהתהליך חי - Readiness בודק תלויות חיצוניות'
+  },
+  {
+    id: 'debug_tf_2',
+    category: 'debugging',
+    type: 'truefalse',
+    question: 'כל endpoints של Admin Debug דורשים X-Admin-API-Key',
+    correct: true,
+    explanation: 'כל הנתיבים תחת /api/admin/debug/ דורשים אימות אדמין'
+  },
+  {
+    id: 'debug_tf_3',
+    category: 'debugging',
+    type: 'truefalse',
+    question: 'ניתן להריץ retry על הודעה בסטטוס `processing`',
+    correct: false,
+    explanation: 'Retry עובד רק על הודעות בסטטוס `failed`'
+  },
+  {
+    id: 'debug_tf_4',
+    category: 'debugging',
+    type: 'truefalse',
+    question: 'force-state עוקף את ולידציית המעברים במכונת המצבים',
+    correct: true,
+    explanation: 'זו בדיוק מטרתו - לאפשר איפוס חירום ללא בדיקת מעברים תקינים'
+  },
+  {
+    id: 'debug_tf_5',
+    category: 'debugging',
+    type: 'truefalse',
+    question: 'Circuit Breaker במצב `half_open` חוסם לחלוטין את כל הקריאות',
+    correct: false,
+    explanation: 'במצב half_open מאפשרים מספר מצומצם של קריאות לבדוק אם השירות התאושש'
+  },
+  {
+    id: 'debug_tf_6',
+    category: 'debugging',
+    type: 'truefalse',
+    question: 'הסקריפט health_check.py יכול לבדוק בדיקות ספציפיות בלבד',
+    correct: true,
+    explanation: 'ניתן להשתמש ב-`--only validation,circuit_breaker` לבדיקות ספציפיות'
+  },
+  {
+    id: 'debug_tf_7',
+    category: 'debugging',
+    type: 'truefalse',
+    question: 'GET /health/ready מחזיר 200 גם אם Redis לא זמין',
+    correct: false,
+    explanation: 'אם יש בעיה בתלות כלשהי, מוחזר 503 (Service Unavailable)'
+  },
+
+  // API Documentation - True/False
+  {
+    id: 'api_doc_tf_1',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'אפשר לנסות endpoints ישירות דרך Swagger UI',
+    correct: true,
+    explanation: 'זו אחת התכונות המרכזיות של Swagger - כפתור "Try it out"'
+  },
+  {
+    id: 'api_doc_tf_2',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'כל מספרי טלפון בתגובות הפאנל מוסתרים באופן מלא',
+    correct: false,
+    explanation: 'מוסתרים רק 4 הספרות האחרונות (למשל: +97250123****)'
+  },
+  {
+    id: 'api_doc_tf_3',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'מיגרציות רצות אוטומטית ב-startup על PostgreSQL',
+    correct: true,
+    explanation: 'המערכת מריצה את המיגרציות אוטומטית בהפעלה'
+  },
+  {
+    id: 'api_doc_tf_4',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'אפשר להסיר את הבעלים האחרון של תחנה',
+    correct: false,
+    explanation: 'המערכת מונעת הסרה של הבעלים האחרון'
+  },
+  {
+    id: 'api_doc_tf_5',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'בקשת OTP מחזירה הודעה שונה אם המספר לא קיים במערכת',
+    correct: false,
+    explanation: 'תשובה גנרית תמיד למניעת user enumeration'
+  },
+  {
+    id: 'api_doc_tf_6',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'Try it out ב-Swagger שולח בקשות אמיתיות לשרת',
+    correct: true,
+    explanation: 'הבקשות הן אמיתיות - צריך להיזהר בשימוש בפרודקשן'
+  },
+  {
+    id: 'api_doc_tf_7',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'שדה `fee` במשלוח הוא חובה בעת יצירה',
+    correct: false,
+    explanation: 'זה שדה אופציונלי עם ברירת מחדל של 10.0'
+  },
+  {
+    id: 'api_doc_tf_8',
+    category: 'api_docs',
+    type: 'truefalse',
+    question: 'capture מבצע גם בדיקת אשראי וגם ניכוי מהארנק באותה טרנזקציה',
+    correct: true,
+    explanation: 'זו פעולה אטומית שמבטיחה consistency'
   }
 ];
