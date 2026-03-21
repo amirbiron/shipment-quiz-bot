@@ -24,7 +24,8 @@ const repos = {
 
 // Gist-based repos to load on startup
 const gistRepos = [
-  { key: 'codebot', name: '🤖 CodeBot', gistId: '01dbd8d9de54cb4cccf6a5cb646e523c' }
+  { key: 'codebot', name: '🤖 CodeBot', gistId: '01dbd8d9de54cb4cccf6a5cb646e523c' },
+  { key: 'roles', name: '👥 תפקידים', gistId: '04854e452a4171b8304e4617e74a6698' }
 ];
 
 async function loadGistRepos() {
